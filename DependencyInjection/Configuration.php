@@ -24,8 +24,7 @@ class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('dorcyv_jwt_session');
+        $treeBuilder = new TreeBuilder('dorcyv_jwt_session');
 
         return $treeBuilder;
     }
