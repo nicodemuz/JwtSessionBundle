@@ -17,8 +17,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
@@ -53,13 +53,13 @@ class CookieEventSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @param GetResponseEvent $event
+     * @param RequestEvent $event
      *
      * @return Request
      *
      * @throws \InvalidArgumentException
      */
-    public function onKernelRequest(GetResponseEvent $event): Request
+    public function onKernelRequest(RequestEvent $event): Request
     {
         $request = $event->getRequest();
 
@@ -73,11 +73,11 @@ class CookieEventSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @param FilterResponseEvent $event
+     * @param ResponseEvent $event
      *
      * @return Response
      */
-    public function onKernelResponse(FilterResponseEvent $event): Response
+    public function onKernelResponse(ResponseEvent $event): Response
     {
         $response = $event->getResponse();
         foreach ($this->cookieManager->getCookies() as $cookie) {
