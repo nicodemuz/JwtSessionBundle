@@ -78,8 +78,15 @@ class JwtSessionHandler extends AbstractSessionHandler
     {
         $token = $this->getToken();
         $this->jwtWrapper->updateExpiration($token, (int)ini_get('session.gc_maxlifetime'));
-        $this->cookieManager->addCookie(new Cookie($this->cookieName, (string)$token, $token->getClaim('exp', 0),
-            null, null, true, true));
+
+        $expiry = $token->getClaim('exp', 0);
+
+        $parts = str_split((string)$token, 4000);
+
+        foreach ($parts as $key => $part) {
+            $this->cookieManager->addCookie(new Cookie($this->cookieName . $key, $part, $expiry, null, null, true, true));
+        }
+        $this->cookieManager->addCookie(new Cookie($this->cookieName . ($key + 1), '', $expiry, null, null, true, true));
 
         return true;
     }
@@ -91,12 +98,23 @@ class JwtSessionHandler extends AbstractSessionHandler
      */
     private function getToken(): Token
     {
-        $cookie = $this->cookieManager->getCookie($this->cookieName);
-        if ($cookie === null || $cookie->getValue() === null) {
+        $tokenString = '';
+
+        foreach (range(0, 100) as $i) {
+            $cookie = $this->cookieManager->getCookie($this->cookieName . $i);
+
+            if ($cookie && strlen($cookie->getValue()) > 0) {
+                $tokenString .= $cookie->getValue();
+            } else {
+                break;
+            }
+        }
+
+        if (!$tokenString) {
             return $this->jwtWrapper->createToken();
         }
 
-        $token = $this->jwtWrapper->parse($cookie->getValue());
+        $token = $this->jwtWrapper->parse($tokenString);
         if ($token === null || !$this->jwtWrapper->isValid($token)) {
 
             return $this->jwtWrapper->createToken();
@@ -126,8 +144,15 @@ class JwtSessionHandler extends AbstractSessionHandler
     {
         $token = $this->getToken();
         $token = $this->jwtWrapper->updateClaim($token, 'session', $data);
-        $this->cookieManager->addCookie(new Cookie($this->cookieName, (string)$token,
-            $token->getClaim('exp', 0)));
+
+        $expiry = $token->getClaim('exp', 0);
+
+        $parts = str_split((string)$token, 4000);
+
+        foreach ($parts as $key => $part) {
+            $this->cookieManager->addCookie(new Cookie($this->cookieName . $key, $part, $expiry));
+        }
+        $this->cookieManager->addCookie(new Cookie($this->cookieName . ($key + 1), '', $expiry));
 
         return true;
     }
@@ -139,7 +164,9 @@ class JwtSessionHandler extends AbstractSessionHandler
      */
     protected function doDestroy($sessionId): bool
     {
-        $this->cookieManager->addCookie(new Cookie($this->cookieName));
+        foreach (range(0, 100) as $i) {
+            $this->cookieManager->addCookie(new Cookie($this->cookieName . $i));
+        }
 
         return true;
     }
